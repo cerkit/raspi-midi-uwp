@@ -151,35 +151,8 @@ namespace RaspiMidiUwp
         /// <param name="e"></param>
         private void sendNoteButton_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                if (serialPort != null)
-                {
-                    // Create the DataWriter object and attach to OutputStream
-                    dataWriteObject = new DataWriter(serialPort.OutputStream);
+            SendNote(Convert.ToUInt32(txtNote.Text), Convert.ToUInt32(txtVelocity.Text), Convert.ToUInt32(txtChannel.Text));
 
-                    ////Launch the WriteAsync task to perform the write
-                    //await WriteAsync();
-                    SendNote(Convert.ToUInt32(txtNote.Text), Convert.ToUInt32(txtVelocity.Text), Convert.ToUInt32(txtChannel.Text));
-                }
-                else
-                {
-                    status.Text = "No default device found";
-                }
-            }
-            catch (Exception ex)
-            {
-                status.Text = this.Name + ": " + ex.Message;
-            }
-            finally
-            {
-                // Cleanup once complete
-                if (dataWriteObject != null)
-                {
-                    dataWriteObject.DetachStream();
-                    dataWriteObject = null;
-                }
-            }
         }
 
         /// <summary>
@@ -203,23 +176,60 @@ namespace RaspiMidiUwp
             storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
 
             UInt32 bytesWritten = await storeAsyncTask;
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+
+            dataWriteObject.WriteByte(Convert.ToByte(36)); // note (60 = middle c)
+            dataWriteObject.WriteByte(Convert.ToByte(127)); // velocity (127 = loudest)
+            dataWriteObject.WriteByte(Convert.ToByte(128)); // note off channel 0
+            
+            storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
+
+            bytesWritten += await storeAsyncTask;
+
             if (bytesWritten > 0)
             {
                 //status.Text = sendText.Text + ", ";
-                //status.Text += "bytes written successfully!";
+                status.Text += bytesWritten + " bytes written successfully!";
             }
         }
 
-        private void SendNote(uint note, uint velocity, uint channel, bool onOrOff = true)
+        private async void SendNote(uint note, uint velocity, uint channel, bool onOrOff = true)
         {
-            dataWriteObject.ByteOrder = ByteOrder.BigEndian;
+            try
+            {
+                if (serialPort != null)
+                {
+                    // Create the DataWriter object and attach to OutputStream
+                    dataWriteObject = new DataWriter(serialPort.OutputStream);
 
-            dataWriteObject.WriteByte(Convert.ToByte(note));
-            dataWriteObject.WriteByte(Convert.ToByte(velocity));
-            dataWriteObject.WriteByte(Convert.ToByte(channel));
+                    dataWriteObject.ByteOrder = ByteOrder.BigEndian;
 
-            // Launch an async task synchronously so we don't play one note before another
-            dataWriteObject.StoreAsync().AsTask().Wait();
+                    dataWriteObject.WriteByte(Convert.ToByte(note));
+                    dataWriteObject.WriteByte(Convert.ToByte(velocity));
+                    dataWriteObject.WriteByte(Convert.ToByte(channel));
+
+                    // Launch an async task synchronously so we don't play one note before another
+                    await dataWriteObject.StoreAsync();
+                }
+                else
+                {
+                    status.Text = "No default device found";
+                }
+            }
+            catch (Exception ex)
+            {
+                status.Text = this.Name + ": " + ex.Message;
+            }
+            finally
+            {
+                // Cleanup once complete
+                if (dataWriteObject != null)
+                {
+                    dataWriteObject.DetachStream();
+                    dataWriteObject = null;
+                }
+            }
         }
 
         /// <summary>

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RaspiMidiUwp.Classes
 {
-    public class McpObserver : IObserver<McpPinState>
+    public class McpObserver : IObserver<ushort>
     {
         private IDisposable unsubscriber;
         private string instName;
@@ -21,7 +21,7 @@ namespace RaspiMidiUwp.Classes
         public string Name
         { get { return instName; } }
 
-        public virtual void Subscribe(IObservable<McpPinState> provider)
+        public virtual void Subscribe(IObservable<ushort> provider)
         {
             if (provider != null)
                 unsubscriber = provider.Subscribe(this);
@@ -37,7 +37,7 @@ namespace RaspiMidiUwp.Classes
             throw error;
         }
 
-        public void OnNext(McpPinState value)
+        public void OnNext(ushort value)
         {
             var args = new PinChangedEventArgs { PinState = value };
             
@@ -52,6 +52,6 @@ namespace RaspiMidiUwp.Classes
 
     public class PinChangedEventArgs : EventArgs
     {
-        public McpPinState PinState { get; set; }
+        public ushort PinState { get; set; }
     }
 }
