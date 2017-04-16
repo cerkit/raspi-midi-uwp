@@ -1,0 +1,65 @@
+﻿<!-- Copyright (c) Microsoft. All rights reserved. -->
+
+<Page
+    x:Class="RaspiMidiUwp.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:RaspiMidiUwp"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <CollectionViewSource x:Name="DeviceListSource"/>
+    </Page.Resources>
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" HorizontalAlignment="Right" Width="1024">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto" MinHeight="58.1"/>
+            <RowDefinition Height="Auto" MinHeight="61"/>
+            <RowDefinition Height="Auto" MinHeight="92.15"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="pageTitle" Text="MIDI" Style="{StaticResource HeaderTextBlockStyle}" 
+                        IsHitTestVisible="false" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="172,10,39,0.2" Height="61" Width="261"/>
+
+        <StackPanel Grid.Row="1" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Margin="225,9.8,156,0.6" Height="20" Width="91"/>
+
+        <StackPanel Grid.Row="2" Grid.Column="0" HorizontalAlignment="Center" VerticalAlignment="Top" Orientation="Horizontal" Margin="70,0.4,2,0" Width="400" Height="80"/>
+
+        <StackPanel Grid.Row="2" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Vertical" Margin="29,12.4,0,43.6" Height="84" Width="94" Grid.RowSpan="2">
+            <Button Name="comPortInput" Content="Connect" Click="comPortInput_Click"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="7" Grid.Column="1" HorizontalAlignment="Left" VerticalAlignment="Center" Orientation="Horizontal" Margin="29,13.25,0,13.75" Height="33" Width="57"/>
+        <TextBlock x:Name="status" HorizontalAlignment="Left" Margin="19,10.25,0,-10.25" Grid.Row="9" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="428"/>
+        <TextBlock Margin="10,10.4,429.8,37.95" Grid.Row="2">
+                <Run Text="Note"/>
+        </TextBlock>
+        <TextBox x:Name="txtNote" Text="36" Margin="71,10.4,338.6,36.95" Grid.Row="2"/>
+        <TextBlock Margin="10,0.05,411.6,25.6" Grid.Row="3">
+                <Run Text="Velocity"/>
+        </TextBlock>
+        <TextBox x:Name="txtVelocity" Text="80" Margin="71,4.05,338.6,21.6" Grid.Row="3"/>
+        <TextBlock Margin="10,10.4,409.6,17.6" Grid.Row="4">
+                <Run Text="Channel"/>
+        </TextBlock>
+        <TextBox x:Name="txtChannel" Text="144" Margin="72,10.4,338.4,17.6" Grid.Row="4"/>
+        <Button x:Name="sendNoteButton" Content="Send note on" Click="sendNoteButton_Click" Margin="10,10.4,0,48.75" Grid.Row="5" Width="126"/>
+        <Button x:Name="closeDevice" Margin="113.6,12.4,-84.4,35.95" Content="Disconnect" Click="closeDevice_Click" Grid.Column="1" Grid.Row="2"/>
+        <TextBox x:Name="rcvdText" HorizontalAlignment="Left" Margin="10,79.25,0,-143.25" Grid.Row="9" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Height="96" Width="352"/>
+
+    </Grid>
+</Page>
