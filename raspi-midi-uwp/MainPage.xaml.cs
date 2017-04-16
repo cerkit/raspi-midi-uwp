@@ -9,6 +9,9 @@ using Windows.Devices.SerialCommunication;
 using Windows.Storage.Streams;
 using System.Threading;
 using System.Threading.Tasks;
+using RaspiMidiUwp.Utilities;
+using AdafruitClassLibrary;
+using RaspiMidiUwp.Classes;
 
 namespace RaspiMidiUwp
 {
@@ -26,6 +29,8 @@ namespace RaspiMidiUwp
         private ObservableCollection<DeviceInformation> listOfDevices;
         private CancellationTokenSource ReadCancellationTokenSource;
         private DeviceInformation _defaultDevice;
+        private ObservableMcp23017 _mcp;
+        private McpObserver _observer;
 
         public MainPage()
         {
@@ -44,47 +49,20 @@ namespace RaspiMidiUwp
 
             _defaultDevice = dis[0];
 
-            serialPort = await SerialDevice.FromIdAsync(_defaultDevice.Id);
-            if (serialPort == null) return;
-
             // Disable the 'Connect' button 
             comPortInput.IsEnabled = false;
 
             try
             {
-                
-                if (serialPort == null) return;
+                await ConnectToCOMPort();
 
-                // Disable the 'Connect' button 
-                comPortInput.IsEnabled = false;
-
-                // Configure serial settings
-                serialPort.WriteTimeout = TimeSpan.FromMilliseconds(1000);
-                serialPort.ReadTimeout = TimeSpan.FromMilliseconds(1000);
-                serialPort.BaudRate = BAUD_RATE;
-                serialPort.Parity = SerialParity.None;
-                serialPort.StopBits = SerialStopBitCount.One;
-                serialPort.DataBits = 8;
-                serialPort.Handshake = SerialHandshake.None;
-
-                // Display configured settings
-                status.Text = "Serial port configured successfully: ";
-                status.Text += serialPort.BaudRate + "-";
-                status.Text += serialPort.DataBits + "-";
-                status.Text += serialPort.Parity.ToString() + "-";
-                status.Text += serialPort.StopBits;
-
-                // Set the RcvdText field to invoke the TextChanged callback
-                // The callback launches an async Read task to wait for data
-                rcvdText.Text = "Waiting for data...";
-
-                // Create cancellation token object to close I/O operations when closing the device
-                ReadCancellationTokenSource = new CancellationTokenSource();
-
-                // Enable 'WRITE' button to allow sending data
-                sendNoteButton.IsEnabled = true;
-
-                Listen();
+                // start our MCP23017 observation
+                _mcp = new ObservableMcp23017(new int[] { 0 });
+                await _mcp.InitMCP23017Async(I2CBase.I2CSpeed.I2C_400kHz);
+                _observer = new McpObserver("Main");
+                _observer.PinChanged += Observer_PinChanged;
+                _observer.Subscribe(_mcp);
+                _mcp.StartTimer();
 
             }
             catch (Exception ex)
@@ -93,6 +71,11 @@ namespace RaspiMidiUwp
                 comPortInput.IsEnabled = true;
                 sendNoteButton.IsEnabled = false;
             }
+        }
+
+        private void Observer_PinChanged(object sender, Classes.PinChangedEventArgs e)
+        {
+            SendNote(36, 80, 144);
         }
 
         /// <summary>
@@ -113,19 +96,20 @@ namespace RaspiMidiUwp
         {
             DeviceInformation entry = _defaultDevice;
 
+            serialPort = await SerialDevice.FromIdAsync(_defaultDevice.Id);
+            if (serialPort == null) return;
+
             try
             {
-                serialPort = await SerialDevice.FromIdAsync(entry.Id);
                 if (serialPort == null) return;
 
                 // Disable the 'Connect' button 
                 comPortInput.IsEnabled = false;
 
-
                 // Configure serial settings
                 serialPort.WriteTimeout = TimeSpan.FromMilliseconds(1000);
                 serialPort.ReadTimeout = TimeSpan.FromMilliseconds(1000);
-                serialPort.BaudRate = 57600;
+                serialPort.BaudRate = BAUD_RATE;
                 serialPort.Parity = SerialParity.None;
                 serialPort.StopBits = SerialStopBitCount.One;
                 serialPort.DataBits = 8;
@@ -359,6 +343,10 @@ namespace RaspiMidiUwp
             sendNoteButton.IsEnabled = false;
             rcvdText.Text = "";
             listOfDevices.Clear();
+
+            _observer.Unsubscribe();
+            _mcp.StopTimer();
+            _mcp.EndTransmission();
         }
 
         /// <summary>
