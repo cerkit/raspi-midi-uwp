@@ -5,6 +5,10 @@ This code is based off of the [SerialUART sample](https://github.com/ms-iot/samp
 
 This project uses the serial port to send a simple MIDI message using decimals (unsigned integers, to be more precise).
 
+To connect my Raspberry Pi to the serial port, I am using the [USB to TTL Serial Cable](https://www.adafruit.com/product/954) from Adafruit.
+
+![USB to Serial Cable](https://cdn-shop.adafruit.com/970x728/954-02.jpg)
+
 It requires a virtual MIDI port. I am using the [LoopBe1](http://www.nerds.de/en/loopbe1.html) virtual port.
 
 It also requires a serial-to-MIDI integration piece. I am using [SpikenzieLabs serial MIDI](http://www.spikenzielabs.com/SpikenzieLabs/Serial_MIDI.html).
