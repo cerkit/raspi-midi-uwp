@@ -3,6 +3,8 @@ Using MIDI with UWP and .NET (C#)
 
 This app demonstrates sending MIDI messages to your DAW over the serial port on your Raspberry Pi. It runs under .NET in [Windows 10 IoT edition](https://developer.microsoft.com/en-us/windows/iot).
 
+It is only proof-of-concept. After working with it for awhile, I realized that the overhead of Windows 10 and .NET framework prevent the MIDI messages from being processed effectively while a UI is running. It might work better as a background app.
+
 The code is based off of the [SerialUART sample](https://github.com/ms-iot/samples/tree/develop/SerialUART/CS) from the [Microsoft IoT samples site](https://github.com/ms-iot/samples).
 
 This project uses the serial port to send a simple MIDI message using decimals (unsigned integers, to be more precise).
