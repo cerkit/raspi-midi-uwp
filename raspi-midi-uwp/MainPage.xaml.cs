@@ -12,12 +12,15 @@ using System.Threading.Tasks;
 using RaspiMidiUwp.Utilities;
 using AdafruitClassLibrary;
 using RaspiMidiUwp.Classes;
+using System.Diagnostics;
+using Windows.System.Threading;
 
 namespace RaspiMidiUwp
 {
     public sealed partial class MainPage : Page
     {
         private const int BAUD_RATE = 115200;
+        private const ushort PIN_MASK = 65534;
 
         /// <summary>
         /// Private variables
@@ -25,12 +28,12 @@ namespace RaspiMidiUwp
         private SerialDevice serialPort = null;
         DataWriter dataWriteObject = null;
         DataReader dataReaderObject = null;
+        private ThreadPoolTimer timer;
 
         private ObservableCollection<DeviceInformation> listOfDevices;
         private CancellationTokenSource ReadCancellationTokenSource;
         private DeviceInformation _defaultDevice;
-        private ObservableMcp23017 _mcp;
-        private McpObserver _observer;
+        Mcp23017 _mcp;
 
         public MainPage()
         {
@@ -56,13 +59,9 @@ namespace RaspiMidiUwp
             {
                 await ConnectToCOMPort();
 
-                // start our MCP23017 observation
-                _mcp = new ObservableMcp23017(new int[] { 0 });
-                await _mcp.InitMCP23017Async(I2CBase.I2CSpeed.I2C_400kHz);
-                _observer = new McpObserver("Main");
-                _observer.PinChanged += Observer_PinChanged;
-                _observer.Subscribe(_mcp);
-                _mcp.StartTimer();
+                _mcp = new Mcp23017();
+                await _mcp.InitMCP23017Async(I2CBase.I2CSpeed.I2C_100kHz);
+                timer = ThreadPoolTimer.CreatePeriodicTimer(Timer_Tick, TimeSpan.FromMilliseconds(25));
 
             }
             catch (Exception ex)
@@ -73,9 +72,39 @@ namespace RaspiMidiUwp
             }
         }
 
-        private void Observer_PinChanged(object sender, Classes.PinChangedEventArgs e)
+        private ushort _oldState = 65535;
+
+        private void Timer_Tick(ThreadPoolTimer timer)
         {
-            SendNote(36, 80, 144);
+            ushort newState = _mcp.readGPIOAB();
+            bool bass = false;
+            bool snare = false;
+
+            if (newState != _oldState)
+            {
+                if (newState > 0)
+                {
+                    bass = _mcp.digitalRead(1) == Mcp23017.Level.HIGH;
+                    snare = _mcp.digitalRead(2) == Mcp23017.Level.HIGH;
+
+
+                    Debug.WriteLine("bass: " + bass);
+                    Debug.WriteLine("snare: " + snare);
+
+                    if (bass)
+                    {
+                        SendNote(36, 80, 144);
+
+                    }
+                    if (snare)
+                    {
+                        SendNote(37, 80, 144);
+                    }
+                }
+
+                Debug.WriteLine(string.Format("{0}:{1}", _oldState, newState));
+                _oldState = newState;
+            }
         }
 
         /// <summary>
@@ -132,7 +161,7 @@ namespace RaspiMidiUwp
                 // Enable 'WRITE' button to allow sending data
                 sendNoteButton.IsEnabled = true;
 
-                Listen();
+                //Listen();
             }
             catch (Exception ex)
             {
@@ -159,40 +188,40 @@ namespace RaspiMidiUwp
         /// WriteAsync: Task that asynchronously writes data from the input text box 'sendText' to the OutputStream 
         /// </summary>
         /// <returns></returns>
-        private async Task WriteAsync()
-        {
-            Task<UInt32> storeAsyncTask;
+        //private async Task WriteAsync()
+        //{
+        //    Task<UInt32> storeAsyncTask;
 
-            byte[] bytes = { };
+        //    byte[] bytes = { };
 
-            // loop through and send the byte values of our message
-            dataWriteObject.ByteOrder = ByteOrder.BigEndian;
+        //    // loop through and send the byte values of our message
+        //    dataWriteObject.ByteOrder = ByteOrder.BigEndian;
 
-            dataWriteObject.WriteByte(Convert.ToByte(36)); // note (60 = middle c)
-            dataWriteObject.WriteByte(Convert.ToByte(127)); // velocity (127 = loudest)
-            dataWriteObject.WriteByte(Convert.ToByte(144)); // note on channel 0
+        //    dataWriteObject.WriteByte(Convert.ToByte(36)); // note (60 = middle c)
+        //    dataWriteObject.WriteByte(Convert.ToByte(127)); // velocity (127 = loudest)
+        //    dataWriteObject.WriteByte(Convert.ToByte(144)); // note on channel 0
 
-            // Launch an async task to complete the write operation
-            storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
+        //    // Launch an async task to complete the write operation
+        //    storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
 
-            UInt32 bytesWritten = await storeAsyncTask;
+        //    UInt32 bytesWritten = await storeAsyncTask;
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
+        //    await Task.Delay(TimeSpan.FromSeconds(1));
 
-            dataWriteObject.WriteByte(Convert.ToByte(36)); // note (60 = middle c)
-            dataWriteObject.WriteByte(Convert.ToByte(127)); // velocity (127 = loudest)
-            dataWriteObject.WriteByte(Convert.ToByte(128)); // note off channel 0
+        //    dataWriteObject.WriteByte(Convert.ToByte(36)); // note (60 = middle c)
+        //    dataWriteObject.WriteByte(Convert.ToByte(127)); // velocity (127 = loudest)
+        //    dataWriteObject.WriteByte(Convert.ToByte(128)); // note off channel 0
             
-            storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
+        //    storeAsyncTask = dataWriteObject.StoreAsync().AsTask();
 
-            bytesWritten += await storeAsyncTask;
+        //    bytesWritten += await storeAsyncTask;
 
-            if (bytesWritten > 0)
-            {
-                //status.Text = sendText.Text + ", ";
-                status.Text += bytesWritten + " bytes written successfully!";
-            }
-        }
+        //    if (bytesWritten > 0)
+        //    {
+        //        //status.Text = sendText.Text + ", ";
+        //        status.Text += bytesWritten + " bytes written successfully!";
+        //    }
+        //}
 
         private async void SendNote(uint note, uint velocity, uint channel, bool onOrOff = true)
         {
@@ -353,10 +382,6 @@ namespace RaspiMidiUwp
             sendNoteButton.IsEnabled = false;
             rcvdText.Text = "";
             listOfDevices.Clear();
-
-            _observer.Unsubscribe();
-            _mcp.StopTimer();
-            _mcp.EndTransmission();
         }
 
         /// <summary>
