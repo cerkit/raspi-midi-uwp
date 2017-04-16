@@ -28,4 +28,8 @@ The velocity is between 0-127 with 127 being the loudest.
 
 [Here](http://www.indiana.edu/~emusic/etext/MIDI/chapter3_MIDI4.shtml0) is a list of MIDI messages.
 
+To test, you can hook up buttons to BCM pins 4, 17, and 18 (WiringPi pins 7, 0, and 1) and attach them to +3v3.
+
+If you play too fast, the app will get hung up. I tried it without the Queue, but it had the same issues. The timer mess was added right before I gave up on the whole idea and decided to go with an FPGA.
+
 
