@@ -22,4 +22,6 @@ Notes are a little easier, because we already think of them in terms of decimal,
 
 The velocity is between 0-127 with 127 being the loudest.
 
+[Here](http://www.indiana.edu/~emusic/etext/MIDI/chapter3_MIDI4.shtml0) is a list of MIDI messages.
+
 
